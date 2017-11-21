@@ -46,9 +46,6 @@
 // ***********************************************************************************************************************
 // ************************************************** private variables **************************************************
 // ***********************************************************************************************************************
-	var componentCollection = null;
-	var httpRequest = null;
-	var URLToStyle = '';
 	var jsonFileName = '';
 	
 // ***********************************************************************************************************************
@@ -84,22 +81,22 @@
 		document.getElementById(typeList).appendChild(li);
 	}
 
-	var setComponent = function(actCompName, subtypeNoSpace, type) {
+	var setComponent = function(actCompName, subtypeNoSpace, type, pathPrefix) {
 		// set the component in the menu:
 		var comp = document.createElement('li');
 		var compText = document.createTextNode(actCompName);
 		comp.appendChild(compText);
-		comp.setAttribute('data-filename', type + 's/' + actCompName + '.htm');
+		comp.setAttribute('data-filename', pathPrefix + type + 's/' + actCompName + '.htm');
 		document.getElementById(type + subtypeNoSpace + 'List').appendChild(comp);
 		// set the component in the datalist of the quickselect-field:
 		var opt = document.createElement('option');
 		opt.setAttribute('id', 'opt_' + actCompName);
 		opt.setAttribute('value', actCompName);
-		opt.setAttribute('data-filename', type + 's/' + actCompName + '.htm');
+		opt.setAttribute('data-filename', pathPrefix + type + 's/' + actCompName + '.htm');
 		document.getElementById('componentsDataList').appendChild(opt);
 	}	
 
-	var buildComponentMenu = function() {
+	var buildComponentMenu = function(jsonData, componentCollection) {
 		// first empty the menu...
 		var sensorsList = document.getElementById('sensorsList');
 		var processorsList = document.getElementById('processorsList');
@@ -126,7 +123,7 @@
 						setSubtype(subtype, subtypeNoSpace, 'sensorsList', 'sensor');
 					}
 					// set the component:
-					setComponent(actCompName, subtypeNoSpace, 'sensor');
+					setComponent(actCompName, subtypeNoSpace, 'sensor', jsonData.plugins);
 					break;
 				case 'processor':
 					// set new subcategory, if not yet done so:
@@ -134,7 +131,7 @@
 						setSubtype(subtype, subtypeNoSpace, 'processorsList', 'processor');
 					}
 					// set the component:
-					setComponent(actCompName, subtypeNoSpace, 'processor');
+					setComponent(actCompName, subtypeNoSpace, 'processor', jsonData.plugins);
 					break;
 				case 'actuator':
 					// set new subcategory, if not yet done so:
@@ -142,28 +139,32 @@
 						setSubtype(subtype, subtypeNoSpace, 'actuatorsList', 'actuator');
 					}
 					// set the component:
-					setComponent(actCompName, subtypeNoSpace, 'actuator');
+					setComponent(actCompName, subtypeNoSpace, 'actuator', jsonData.plugins);
 					break;
 			}
 		}
 	}
 
-	var refreshMenu = function(jsonData) {
+	var addToMenu = function (jsonData, htmlMenuSnippet, prefixPath) {
+		var htmlObject = $.parseHTML(htmlMenuSnippet);
+		var elements=$( htmlObject ).find("[data-filename]");
+		for(var i=0; i<elements.length; i++) {
+			var currentFilename = $( elements[i] ).attr("data-filename");
+			$( elements[i] ).attr("data-filename", prefixPath + currentFilename);
+		}
+		$('#menu').append(htmlObject);
+	}
+	
+	var setupMenu = function(jsonData) {
 		if ($('#menu').menu('instance')) $('#menu').menu('destroy');
 		$('#menu').menu({
 			select: function(evt, ui) {
 				if (ui.item[0].childElementCount === 0) {					
 					var pagePath = ui.item.attr('data-filename');
-					if (pagePath.includes('acs/')) {
-						$('#mainContent').attr('src', jsonData.ACS + pagePath);
-					} else if (pagePath.includes('are/')) {
-						$('#mainContent').attr('src', jsonData.ARE + pagePath);
-					} else {
-						$('#mainContent').attr('src', jsonData.plugins + pagePath);
-					}
+					$('#mainContent').attr('src', pagePath);
 				}
 			}
-		});		
+		});
 	}
 	
 	var loadPluginMenuFromComponentCollection = function(jsonData) {
@@ -173,21 +174,22 @@
 			if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
 				alert('Could not find component collection file. Please make sure the file "defaultComponentCollection.abd" exists in the folder specified in helpPaths_*.json.');
 			} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
-				componentCollection = $.parseXML(httpReq.responseText);
+				var componentCollection = $.parseXML(httpReq.responseText);
 				// after having successfully loaded the componentCollection, build  and refresh the menu
-				buildComponentMenu();
-				refreshMenu(jsonData);
+				buildComponentMenu(jsonData, componentCollection);
+				setupMenu(jsonData);
+				
 				// set the handlers for the quickselect field and the corresponding show-button
 				document.getElementById('quickselect').addEventListener('change', function() {
 					var compName = this.value;
 					var file = document.getElementById('opt_' + compName).attributes.getNamedItem('data-filename').value;
-					$('#mainContent').attr('src', jsonData.plugins + file);
+					$('#mainContent').attr('src', file);
 					this.value = '';				
 				});
 				document.getElementById('showButton').addEventListener('click', function() {
 					var compName = document.getElementById('quickselect').value;
 					var file = document.getElementById('opt_' + compName).attributes.getNamedItem('data-filename').value;
-					$('#mainContent').attr('src', jsonData.plugins + file);
+					$('#mainContent').attr('src', file);
 					document.getElementById('quickselect').value = '';				
 				});			
 			}
@@ -195,10 +197,10 @@
 		// try to load component collection from the path specified in the json file
 		if (jsonData.componentCollection) { 
 			httpReq.open('GET', jsonData.componentCollection + 'defaultComponentCollection.abd', true);
+			httpReq.send();	
 		} else {
 			alert('No component collection file specified. Please make sure to specify the path to "defaultComponentCollection.abd" in helpPaths_*.json.');
 		}
-		httpReq.send();	
 	}
 
 	var loadPluginHelp = function(jsonData) {
@@ -208,9 +210,10 @@
 			httpReq.onreadystatechange = function() {
 				if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
 					console.log('Error loading code snippets for help - maybe "help.htm" is missing at ' + jsonData.plugins + '?');
-					refreshMenu(jsonData);
+					setupMenu(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
-					$('#menu').append(httpReq.responseText.substring(0, httpReq.responseText.lastIndexOf('</li>') + 4)); // plugin submenu
+					addToMenu(jsonData,httpReq.responseText.substring(0, httpReq.responseText.lastIndexOf('</li>') + 4),jsonData.plugins);
+					
 					$('#menuBlock').append(httpReq.responseText.substring(httpReq.responseText.lastIndexOf('</li>') + 5, httpReq.responseText.length)); // quickselect field
 					loadPluginMenuFromComponentCollection(jsonData);
 				}
@@ -218,7 +221,7 @@
 			httpReq.open('GET', jsonData.plugins + 'help.htm.menu', true);
 			httpReq.send();
 		} else {
-			refreshMenu(jsonData);
+			setupMenu(jsonData);
 		}
 	}
 	
@@ -231,18 +234,22 @@
 					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ACS + '?');
 					loadPluginHelp(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
-					$('#menu').append(httpReq.responseText);
+					addToMenu(jsonData,httpReq.responseText,jsonData.ACS);
 					loadPluginHelp(jsonData);
+					//finally create menu and add select action.
+					setupMenu(jsonData);
 				}
 			}
 			httpReq.open('GET', jsonData.ACS + 'help.htm.menu', true);
 			httpReq.send();
 		} else {
 			loadPluginHelp(jsonData);
+			//finally create menu and add select action.
+			setupMenu(jsonData);
 		}
 	}
-
-	var loadStartPage = function(jsonData) {
+	
+	var loadStartPage = function(jsonData) {		
 		// make sure to load the correct file on startup, if a querystring has been given
 		if (window.location.search !== '') {
 			var qstr = window.location.search.substr(1, window.location.search.length-1).split('&');
@@ -280,32 +287,38 @@
 	// load the paths to the help files from json
 	$.getJSON(jsonFileName, function(jsonData) {
 		// find the absolute URL to help.css (to inject into help files loaded into iFrame)
-		if (jsonData.stylesheet) {
-			var href = window.location.href.split('?');
-			URLToStyle = href[0].substring(0, href[0].lastIndexOf('/') + 1) + jsonData.stylesheet + 'help.css';
-		} else {
-			console.log('Error loading URL to stylesheet - please make sure the relative URL to help.css is specified in helpPaths.json');
-		}
 		$('#mainContent').load(function() {
-			// insert link to stylesheet into page loaded in iFrame
-			$(this).contents().find('head')[0].append($('<link rel="stylesheet" type="text/css" href="' + URLToStyle + '" />')[0]);				
+			if (jsonData.stylesheet) {
+				var href = window.location.href.split('?');
+				var URLToStyle = href[0].substring(0, href[0].lastIndexOf('/') + 1) + jsonData.stylesheet + 'help.css';
+				// insert link to stylesheet into page loaded in iFrame
+				$(this).contents().find('head')[0].append($('<link rel="stylesheet" type="text/css" href="' + URLToStyle + '" />')[0]);				
+			} else {
+				console.log('Error loading URL to stylesheet - please make sure the relative URL to help.css is specified in helpPaths.json');
+			}						
 		});		
 		// load misc. ARE-help, if necessary (i.e. if path is not null) - then (or otherwise) load ACS- and plugin-help
 		if (jsonData.ARE) {
-			httpRequest = new XMLHttpRequest();
+			var httpRequest = new XMLHttpRequest();
 			httpRequest.onreadystatechange = function() {
 				if (httpRequest.readyState === XMLHttpRequest.DONE && (httpRequest.status === 404 || httpRequest.status === 0)) {
 					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ARE + '?');
 					loadACSAndPluginHelp(jsonData);
 				} else if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
-					$('#menu').append(httpRequest.responseText);
+					addToMenu(jsonData,httpRequest.responseText,jsonData.ARE);
 					loadACSAndPluginHelp(jsonData);
+					
+					//finally create menu and add select action.
+					setupMenu(jsonData);
+
 				}
 			}
 			httpRequest.open('GET', jsonData.ARE + 'help.htm.menu', true);
 			httpRequest.send();
 		} else {
 			loadACSAndPluginHelp(jsonData);
+			//finally create menu and add select action.
+			setupMenu(jsonData);
 		}
 		loadStartPage(jsonData);
 	}).fail(function() {console.log('Error: Could not read path information - might be a syntax error in helpPaths.json.');});
