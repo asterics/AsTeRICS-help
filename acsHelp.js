@@ -207,7 +207,7 @@
 			var httpReq = new XMLHttpRequest();
 			httpReq.onreadystatechange = function() {
 				if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
-					console.log('Error loading code snippets for plugin-help - maybe "plugin_help.htm" is missing at ' + jsonData.plugins + '?');
+					console.log('Error loading code snippets for help - maybe "help.htm" is missing at ' + jsonData.plugins + '?');
 					refreshMenu(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
 					$('#menu').append(httpReq.responseText.substring(0, httpReq.responseText.lastIndexOf('</li>') + 4)); // plugin submenu
@@ -215,7 +215,7 @@
 					loadPluginMenuFromComponentCollection(jsonData);
 				}
 			}
-			httpReq.open('GET', jsonData.plugins + 'plugin_help.htm.menu', true);
+			httpReq.open('GET', jsonData.plugins + 'help.htm.menu', true);
 			httpReq.send();
 		} else {
 			refreshMenu(jsonData);
@@ -228,14 +228,14 @@
 			var httpReq = new XMLHttpRequest();
 			httpReq.onreadystatechange = function() {
 				if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
-					console.log('Error loading code snippet for ACS-help - maybe "acs_help.htm" is missing at ' + jsonData.ACS + '?');
+					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ACS + '?');
 					loadPluginHelp(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
 					$('#menu').append(httpReq.responseText);
 					loadPluginHelp(jsonData);
 				}
 			}
-			httpReq.open('GET', jsonData.ACS + 'acs_help.htm.menu', true);
+			httpReq.open('GET', jsonData.ACS + 'help.htm.menu', true);
 			httpReq.send();
 		} else {
 			loadPluginHelp(jsonData);
@@ -295,14 +295,14 @@
 			httpRequest = new XMLHttpRequest();
 			httpRequest.onreadystatechange = function() {
 				if (httpRequest.readyState === XMLHttpRequest.DONE && (httpRequest.status === 404 || httpRequest.status === 0)) {
-					console.log('Error loading code snippet for ARE-help - maybe "are_help.htm" is missing at ' + jsonData.ARE + '?');
+					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ARE + '?');
 					loadACSAndPluginHelp(jsonData);
 				} else if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
 					$('#menu').append(httpRequest.responseText);
 					loadACSAndPluginHelp(jsonData);
 				}
 			}
-			httpRequest.open('GET', jsonData.ARE + 'are_help.htm.menu', true);
+			httpRequest.open('GET', jsonData.ARE + 'help.htm.menu', true);
 			httpRequest.send();
 		} else {
 			loadACSAndPluginHelp(jsonData);
