@@ -273,9 +273,9 @@
 
 	// find out if help is being used locally or hosted on a webserver
 	if (window.location.href.includes('file:///')) {
-		jsonFileName = 'helpPaths-local.json';
+		jsonFileName = 'help_files/helpPaths-local.json';
 	} else {
-		jsonFileName = 'helpPaths-hosted.json';
+		jsonFileName = 'help_files/helpPaths-hosted.json';
 	}
 	// load the paths to the help files from json
 	$.getJSON(jsonFileName, function(jsonData) {
