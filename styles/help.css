@@ -91,6 +91,11 @@ nav {
 	width: 53em;
 }
 
+.componentType {
+	font-size: 1.1em;
+	font-weight: bold;
+}
+
 figure {
 	font-size: 0.9em;
 	text-align: center;
