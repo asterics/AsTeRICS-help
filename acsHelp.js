@@ -173,12 +173,12 @@
 		httpReq.onreadystatechange = function() {
 			if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
 				alert('Could not find component collection file. Please make sure the file "defaultComponentCollection.abd" exists in the folder specified in helpPaths_*.json.');
+				setupMenu(jsonData);
 			} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
 				var componentCollection = $.parseXML(httpReq.responseText);
 				// after having successfully loaded the componentCollection, build  and refresh the menu
 				buildComponentMenu(jsonData, componentCollection);
 				setupMenu(jsonData);
-				
 				// set the handlers for the quickselect field and the corresponding show-button
 				document.getElementById('quickselect').addEventListener('change', function() {
 					var compName = this.value;
@@ -200,6 +200,7 @@
 			httpReq.send();	
 		} else {
 			alert('No component collection file specified. Please make sure to specify the path to "defaultComponentCollection.abd" in helpPaths_*.json.');
+			setupMenu(jsonData);
 		}
 	}
 
@@ -212,8 +213,7 @@
 					console.log('Error loading code snippets for help - maybe "help.htm" is missing at ' + jsonData.plugins + '?');
 					setupMenu(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
-					addToMenu(jsonData,httpReq.responseText.substring(0, httpReq.responseText.lastIndexOf('</li>') + 4),jsonData.plugins);
-					
+					addToMenu(jsonData,httpReq.responseText.substring(0, httpReq.responseText.lastIndexOf('</li>') + 4),jsonData.plugins); // plugin help snippet
 					$('#menuBlock').append(httpReq.responseText.substring(httpReq.responseText.lastIndexOf('</li>') + 5, httpReq.responseText.length)); // quickselect field
 					loadPluginMenuFromComponentCollection(jsonData);
 				}
@@ -231,21 +231,17 @@
 			var httpReq = new XMLHttpRequest();
 			httpReq.onreadystatechange = function() {
 				if (httpReq.readyState === XMLHttpRequest.DONE && (httpReq.status === 404 || httpReq.status === 0)) {
-					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ACS + '?');
+					console.log('Error loading code snippet for ACS help - maybe "help.htm.menu" is missing at ' + jsonData.ACS + '?');
 					loadPluginHelp(jsonData);
 				} else if (httpReq.readyState === XMLHttpRequest.DONE && httpReq.status === 200) {
 					addToMenu(jsonData,httpReq.responseText,jsonData.ACS);
 					loadPluginHelp(jsonData);
-					//finally create menu and add select action.
-					setupMenu(jsonData);
 				}
 			}
 			httpReq.open('GET', jsonData.ACS + 'help.htm.menu', true);
 			httpReq.send();
 		} else {
 			loadPluginHelp(jsonData);
-			//finally create menu and add select action.
-			setupMenu(jsonData);
 		}
 	}
 	
@@ -277,7 +273,6 @@
 // ***********************************************************************************************************************
 // ************************************************** constructor code ***************************************************
 // ***********************************************************************************************************************
-
 	// find out if help is being used locally or hosted on a webserver
 	if (window.location.href.includes('file:///')) {
 		jsonFileName = 'help_files/helpPaths-local.json';
@@ -302,26 +297,20 @@
 			var httpRequest = new XMLHttpRequest();
 			httpRequest.onreadystatechange = function() {
 				if (httpRequest.readyState === XMLHttpRequest.DONE && (httpRequest.status === 404 || httpRequest.status === 0)) {
-					console.log('Error loading code snippet for help - maybe "help.htm" is missing at ' + jsonData.ARE + '?');
+					console.log('Error loading code snippet for ARE help - maybe "help.htm.menu" is missing at ' + jsonData.ARE + '?');
 					loadACSAndPluginHelp(jsonData);
 				} else if (httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
 					addToMenu(jsonData,httpRequest.responseText,jsonData.ARE);
 					loadACSAndPluginHelp(jsonData);
-					
-					//finally create menu and add select action.
-					setupMenu(jsonData);
-
 				}
 			}
 			httpRequest.open('GET', jsonData.ARE + 'help.htm.menu', true);
 			httpRequest.send();
 		} else {
 			loadACSAndPluginHelp(jsonData);
-			//finally create menu and add select action.
-			setupMenu(jsonData);
 		}
 		loadStartPage(jsonData);
-	}).fail(function() {console.log('Error: Could not read path information - might be a syntax error in helpPaths.json.');});
+	}).fail(function() {alert('Error: Could not read path information - possible causes are:\n- a syntax error in helpPaths.json or\n- unsupported browser: AsTeRICS help is optimised for Mozilla Firefox 57 or higher.');});
 	
 	return returnObj;
 }
